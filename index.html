@@ -3,166 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BrandScale | Web Design & Performance Marketing in Wani</title>
+    <title>BrandScale | Premium Digital Growth Agency</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* CSS Reset & Variables */
+        /* --- CSS Reset & Variables --- */
         :root {
-            --primary: #0A192F;
-            --secondary: #FF6B35;
-            --text-dark: #333333;
-            --text-light: #F8F9FA;
-            --bg-light: #F4F7F6;
+            --bg-base: #030712;
+            --bg-surface: #111827;
+            --bg-glass: rgba(17, 24, 39, 0.7);
+            
+            --accent-start: #4F46E5; /* Indigo */
+            --accent-mid: #9333EA;   /* Purple */
+            --accent-end: #EC4899;   /* Pink */
+            
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            
+            --border-light: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.2);
+            
+            --shadow-soft: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 30px rgba(147, 51, 234, 0.15);
+            
+            --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { color: var(--text-dark); line-height: 1.6; }
-        a { text-decoration: none; color: inherit; }
-        
-        /* Navigation */
-        header { background: var(--primary); color: var(--text-light); padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .logo { font-size: 1.5rem; font-weight: bold; color: var(--text-light); }
-        .logo span { color: var(--secondary); }
-        nav ul { list-style: none; display: flex; gap: 1.5rem; }
-        nav a:hover { color: var(--secondary); transition: 0.3s; }
-        
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* --- Reusable Utilities --- */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 5%;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* --- Navigation --- */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 0;
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-light);
+            z-index: 1000;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .logo span {
+            color: var(--accent-mid);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            transition: var(--transition-smooth);
+        }
+
+        .nav-links a:hover {
+            color: var(--text-main);
+        }
+
         /* Buttons */
-        .btn { background: var(--secondary); color: white; padding: 0.8rem 1.5rem; border-radius: 5px; font-weight: bold; display: inline-block; transition: background 0.3s; border: none; cursor: pointer; }
-        .btn:hover { background: #e55a2b; }
-        .btn-outline { background: transparent; border: 2px solid var(--secondary); color: var(--secondary); }
-        .btn-outline:hover { background: var(--secondary); color: white; }
-
-        /* Hero Section */
-        .hero { background: linear-gradient(rgba(10, 25, 47, 0.9), rgba(10, 25, 47, 0.9)), url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80') center/cover; color: var(--text-light); text-align: center; padding: 100px 20px; }
-        .hero h1 { font-size: 3rem; margin-bottom: 20px; line-height: 1.2; }
-        .hero p { font-size: 1.2rem; max-width: 700px; margin: 0 auto 30px; color: #cbd5e1; }
-        .hero-btns { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
-
-        /* About Section */
-        .about { padding: 80px 5%; background: white; text-align: center; }
-        .about h2 { font-size: 2.2rem; color: var(--primary); margin-bottom: 20px; }
-        .about p { max-width: 800px; margin: 0 auto; font-size: 1.1rem; font-style: italic; color: #555; }
-        .founder { margin-top: 15px; font-weight: bold; color: var(--primary); }
-
-        /* Services Section */
-        .services { background: var(--bg-light); padding: 80px 5%; text-align: center; }
-        .services h2 { font-size: 2.2rem; color: var(--primary); margin-bottom: 40px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.3s; }
-        .card:hover { transform: translateY(-5px); }
-        .card h3 { color: var(--primary); margin-bottom: 15px; }
-
-        /* Testimonials */
-        .testimonials { padding: 80px 5%; background: white; text-align: center; }
-        .testimonials h2 { color: var(--primary); margin-bottom: 40px; }
-        .review { background: var(--bg-light); padding: 20px; border-radius: 8px; font-style: italic; }
-        .stars { color: #FFD700; font-size: 1.2rem; margin-bottom: 10px; }
-
-        /* Contact Section */
-        .contact { background: var(--primary); color: var(--text-light); padding: 80px 5%; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; }
-        .contact h2 { color: var(--secondary); margin-bottom: 20px; }
-        .contact-info p { margin-bottom: 15px; font-size: 1.1rem; }
-        .contact-info a { color: var(--secondary); font-weight: bold; }
-        form { display: flex; flex-direction: column; gap: 15px; }
-        input, textarea { padding: 12px; border: none; border-radius: 5px; width: 100%; font-size: 1rem; }
-        
-        /* Footer */
-        footer { background: #06101e; color: #888; text-align: center; padding: 20px; font-size: 0.9rem; }
-
-        /* Mobile Responsive */
-        @media(max-width: 768px) {
-            nav ul { display: none; } /* Simplified mobile menu */
-            .hero h1 { font-size: 2.2rem; }
-        }
-    </style>
-</head>
-<body>
-
-    <header>
-        <div class="logo">Brand<span>Scale</span></div>
-        <nav>
-            <ul>
-                <li><a href="#about">About</a></li>
-                <li><a href="#services">Services</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-        </nav>
-    </header>
-
-    <section class="hero">
-        <h1>Websites that Wow.<br>Marketing that Converts.</h1>
-        <p>Scale Your Brand with BrandScale. We deliver end-to-end web development, performance marketing, and lead generation designed to grow your revenue.</p>
-        <div class="hero-btns">
-            <a href="#contact" class="btn">Get Your Free Marketing Audit</a>
-            <a href="#services" class="btn btn-outline">Start Generating Leads</a>
-        </div>
-    </section>
-
-    <section id="about" class="about">
-        <h2>Driven by Results. Rooted in Wani.</h2>
-        <p>"We believe that a website shouldn't just be a digital brochure—it should be your hardest-working salesperson. My team and I are dedicated to helping businesses in Maharashtra turn their ad spend into measurable revenue through data-driven marketing and high-converting web design."</p>
-        <div class="founder">— Sahil Santosh Kallurwar, Founder</div>
-    </section>
-
-    <section id="services" class="services">
-        <h2>End-to-End Digital Growth Solutions</h2>
-        <div class="grid">
-            <div class="card">
-                <h3>💻 Web Design & Dev</h3>
-                <p>Custom, lightning-fast, and mobile-first websites designed to capture attention and convert visitors into loyal customers.</p>
-            </div>
-            <div class="card">
-                <h3>📈 Performance Marketing</h3>
-                <p>Stop guessing with your ad spend. We create data-driven Google and Meta ad campaigns engineered to maximize your ROAS.</p>
-            </div>
-            <div class="card">
-                <h3>🎯 Lead Generation</h3>
-                <p>Strategic sales funnels and targeted digital marketing that deliver high-quality, pre-qualified prospects straight to your inbox.</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="testimonials">
-        <h2>Real Results. 5-Star Reputation.</h2>
-        <div class="grid">
-            <div class="review">
-                <div class="stars">★★★★★</div>
-                <p>"Nice service. Highly recommended for any business looking to upgrade their digital presence."</p>
-                <strong>- Ayush Asekar</strong>
-            </div>
-             <div class="review">
-                <div class="stars">★★★★★</div>
-                <p>"BrandScale completely transformed how we generate leads. Professional and responsive team."</p>
-                <strong>- Local Wani Business Owner</strong>
-            </div>
-        </div>
-    </section>
-
-    <section id="contact" class="contact">
-        <div class="contact-info">
-            <h2>Ready to Scale? Let's Talk.</h2>
-            <p><strong>📍 Location:</strong> Seva Nagar, Wani, near Santaji Convent, Maharashtra 445304</p>
-            <p><strong>📞 Phone:</strong> <a href="tel:+919370163994">9370163994</a></p>
-            <p><strong>⏰ Hours:</strong> Open daily until 6:00 PM</p>
-            <br>
-            <p><em>*Serving local businesses in Wani and across Maharashtra.</em></p>
-        </div>
-        <div class="contact-form">
-            <form action="#" method="POST">
-                <input type="text" placeholder="Your Name" required>
-                <input type="tel" placeholder="Your Phone Number" required>
-                <select required style="padding: 12px; border-radius: 5px; border: none; font-size: 1rem;">
-                    <option value="">What do you need help with?</option>
-                    <option value="web">Web Design</option>
-                    <option value="ads">Performance Ads</option>
-                    <option value="leads">Lead Generation</option>
-                </select>
-                <button type="submit" class="btn">Request Free Consultation</button>
-            </form>
-        </div>
-    </section>
-
-    <footer>
-        <p>&copy; 2024 BrandScale | Founded by Sahil Santosh Kallurwar. All Rights Reserved.</p>
-    </footer>
-
-</body>
-</html>
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: var(--
