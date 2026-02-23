@@ -1,466 +1,168 @@
-from fastapi import FastAPI, APIRouter
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
-import logging
-from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
-from datetime import datetime, timezone
-
-
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
-
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
-
-# Create the main app without a prefix
-app = FastAPI()
-
-# Create a router with the /api prefix
-api_router = APIRouter(prefix="/api")
-
-
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
-
-# Include the router in the main app
-app.include_router(api_router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
-
-{
-  "design_system": {
-    "identity": {
-      "name": "BrandScale",
-      "archetype": "Performance Pro",
-      "tone": "Professional, Authoritative, Results-Driven, Accessible",
-      "theme_strategy": "Light Mode Primary (Trust) with Dark Mode Support (Modern Tech)"
-    },
-    "typography": {
-      "font_family": {
-        "headings": "Outfit, sans-serif",
-        "body": "Inter, sans-serif",
-        "mono": "JetBrains Mono, monospace"
-      },
-      "scale": {
-        "h1": "text-5xl md:text-7xl font-bold tracking-tight leading-tight",
-        "h2": "text-4xl md:text-5xl font-semibold tracking-tight",
-        "h3": "text-2xl md:text-3xl font-semibold",
-        "body_large": "text-lg md:text-xl leading-relaxed text-muted-foreground",
-        "body_default": "text-base leading-relaxed text-muted-foreground",
-        "caption": "text-sm font-medium uppercase tracking-widest text-muted-foreground"
-      },
-      "imports": [
-        "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700;900&family=JetBrains+Mono&display=swap');"
-      ]
-    },
-    "colors": {
-      "palette": {
-        "primary": {
-          "name": "Deep Royal Blue",
-          "hex": "#0F172A",
-          "tailwind": "bg-slate-900 text-white"
-        },
-        "secondary": {
-          "name": "Electric Blue",
-          "hex": "#2563EB",
-          "tailwind": "bg-blue-600 text-white hover:bg-blue-700"
-        },
-        "accent": {
-          "name": "Vibrant Orange",
-          "hex": "#F97316",
-          "tailwind": "text-orange-500"
-        },
-        "background": {
-          "light": "#FFFFFF",
-          "dark": "#020617"
-        },
-        "surface": {
-          "light": "#F8FAFC",
-          "dark": "#0F172A"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrandScale | Web Design & Performance Marketing in Wani</title>
+    <style>
+        /* CSS Reset & Variables */
+        :root {
+            --primary: #0A192F;
+            --secondary: #FF6B35;
+            --text-dark: #333333;
+            --text-light: #F8F9FA;
+            --bg-light: #F4F7F6;
         }
-      },
-      "gradients": {
-        "hero": "bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900",
-        "text_highlight": "bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-orange-500"
-      }
-    },
-    "visual_enhancers": {
-      "borders": "border border-slate-200 dark:border-slate-800",
-      "shadows": {
-        "card": "shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)]",
-        "hover": "hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 transition-all duration-300"
-      },
-      "radius": "rounded-xl",
-      "glassmorphism": "bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border border-white/20"
-    },
-    "layout": {
-      "container": "container mx-auto px-4 md:px-6 max-w-7xl",
-      "section_spacing": "py-20 md:py-32",
-      "grid_strategies": {
-        "bento": "grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[minmax(200px,auto)]",
-        "feature_list": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12"
-      }
-    },
-    "components": {
-      "buttons": {
-        "primary": "h-12 px-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg shadow-blue-600/20 transition-all",
-        "secondary": "h-12 px-8 rounded-full bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 font-medium transition-all",
-        "ghost": "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
-      },
-      "cards": {
-        "service": "p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900 transition-colors group",
-        "testimonial": "p-6 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-none"
-      },
-      "inputs": "h-12 rounded-lg border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
-    },
-    "motion": {
-      "reduced_motion": true,
-      "micro_interactions": "transition-all duration-200 ease-out",
-      "entrance": "animate-in fade-in slide-in-from-bottom-4 duration-700"
-    },
-    "media": {
-      "image_urls": {
-        "hero_bg": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=srgb&fm=jpg&q=85",
-        "about_team": "https://images.unsplash.com/photo-1603201667141-5a2d4c673378?crop=entropy&cs=srgb&fm=jpg&q=85",
-        "service_web_design": "https://images.unsplash.com/photo-1681164315430-6159b2361615?crop=entropy&cs=srgb&fm=jpg&q=85",
-        "service_marketing": "https://images.unsplash.com/photo-1759752394755-1241472b589d?crop=entropy&cs=srgb&fm=jpg&q=85",
-        "service_lead_gen": "https://images.unsplash.com/photo-1758599543152-a73184816eba?crop=entropy&cs=srgb&fm=jpg&q=85",
-        "trust_meeting": "https://images.unsplash.com/photo-1752159684779-0639174cdfac?crop=entropy&cs=srgb&fm=jpg&q=85"
-      },
-      "icons": "lucide-react"
-    },
-    "instructions_to_main_agent": [
-      "Implement a 'WhatsApp Floating Button' fixed at bottom-right (z-50) with a green brand color (#25D366).",
-      "Use the 'Outfit' font for all headings to give a distinct modern agency feel.",
-      "Ensure the Contact Form is simple: Name, Phone, Business Name, Service Interested In, Message.",
-      "Embed the Google Map for 'Seva Nagar, Wani' in the Contact section.",
-      "Use the 'Bento' grid layout for the Services section on the Homepage.",
-      "The 'Portfolio' section should use a masonry or asymmetric grid if possible, or a clean 3-column grid with large images.",
-      "Add a 'Free Audit' or 'Get Strategy Call' CTA in the Navbar.",
-      "Ensure high contrast for text. Use slate-600 for body text on white backgrounds, not lighter.",
-      "Do NOT use generic 'Lorem Ipsum'. Write professional copy based on the 'BrandScale' persona (ROI, Growth, Local Partner)."
-    ],
-    "universal_guidelines": [
-      "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
-      "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
-      "Create depth through layered design elements with z-index hierarchy",
-      "Use glass-morphism effects with backdrop filters (12-24px blur)",
-      "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
-      "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
-      "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
-      "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 etc for icons.",
-      "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
-      "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
-      "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
-      "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
-      "Prioritize using pre-existing components from src/components/ui when applicable",
-      "Create new components that match the style and conventions of existing components when needed",
-      "Examine existing components to understand the project's component patterns before creating new ones",
-      "Components MUST use named exports (export const ComponentName = ...)",
-      "Pages MUST use default exports (export default function PageName() {...})",
-      "Use sonner for toasts"
-    ]
-  }
-}import { useState } from "react";
-import { MapPin, Phone, Clock, Mail, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import axios from "axios";
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { color: var(--text-dark); line-height: 1.6; }
+        a { text-decoration: none; color: inherit; }
+        
+        /* Navigation */
+        header { background: var(--primary); color: var(--text-light); padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.5rem; font-weight: bold; color: var(--text-light); }
+        .logo span { color: var(--secondary); }
+        nav ul { list-style: none; display: flex; gap: 1.5rem; }
+        nav a:hover { color: var(--secondary); transition: 0.3s; }
+        
+        /* Buttons */
+        .btn { background: var(--secondary); color: white; padding: 0.8rem 1.5rem; border-radius: 5px; font-weight: bold; display: inline-block; transition: background 0.3s; border: none; cursor: pointer; }
+        .btn:hover { background: #e55a2b; }
+        .btn-outline { background: transparent; border: 2px solid var(--secondary); color: var(--secondary); }
+        .btn-outline:hover { background: var(--secondary); color: white; }
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+        /* Hero Section */
+        .hero { background: linear-gradient(rgba(10, 25, 47, 0.9), rgba(10, 25, 47, 0.9)), url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80') center/cover; color: var(--text-light); text-align: center; padding: 100px 20px; }
+        .hero h1 { font-size: 3rem; margin-bottom: 20px; line-height: 1.2; }
+        .hero p { font-size: 1.2rem; max-width: 700px; margin: 0 auto 30px; color: #cbd5e1; }
+        .hero-btns { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
 
-export default function Contact() {
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    business_name: "",
-    service: "",
-    message: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+        /* About Section */
+        .about { padding: 80px 5%; background: white; text-align: center; }
+        .about h2 { font-size: 2.2rem; color: var(--primary); margin-bottom: 20px; }
+        .about p { max-width: 800px; margin: 0 auto; font-size: 1.1rem; font-style: italic; color: #555; }
+        .founder { margin-top: 15px; font-weight: bold; color: var(--primary); }
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+        /* Services Section */
+        .services { background: var(--bg-light); padding: 80px 5%; text-align: center; }
+        .services h2 { font-size: 2.2rem; color: var(--primary); margin-bottom: 40px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.3s; }
+        .card:hover { transform: translateY(-5px); }
+        .card h3 { color: var(--primary); margin-bottom: 15px; }
 
-  const handleServiceChange = (value) => {
-    setFormData((prev) => ({ ...prev, service: value }));
-  };
+        /* Testimonials */
+        .testimonials { padding: 80px 5%; background: white; text-align: center; }
+        .testimonials h2 { color: var(--primary); margin-bottom: 40px; }
+        .review { background: var(--bg-light); padding: 20px; border-radius: 8px; font-style: italic; }
+        .stars { color: #FFD700; font-size: 1.2rem; margin-bottom: 10px; }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.phone || !formData.business_name || !formData.service || !formData.message) {
-      toast.error("Please fill in all fields");
-      return;
-    }
+        /* Contact Section */
+        .contact { background: var(--primary); color: var(--text-light); padding: 80px 5%; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; }
+        .contact h2 { color: var(--secondary); margin-bottom: 20px; }
+        .contact-info p { margin-bottom: 15px; font-size: 1.1rem; }
+        .contact-info a { color: var(--secondary); font-weight: bold; }
+        form { display: flex; flex-direction: column; gap: 15px; }
+        input, textarea { padding: 12px; border: none; border-radius: 5px; width: 100%; font-size: 1rem; }
+        
+        /* Footer */
+        footer { background: #06101e; color: #888; text-align: center; padding: 20px; font-size: 0.9rem; }
 
-    setIsSubmitting(true);
+        /* Mobile Responsive */
+        @media(max-width: 768px) {
+            nav ul { display: none; } /* Simplified mobile menu */
+            .hero h1 { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
 
-    try {
-      await axios.post(`${API}/contact`, formData);
-      toast.success("Thank you! We'll get back to you within 24 hours.");
-      setFormData({
-        name: "",
-        phone: "",
-        business_name: "",
-        service: "",
-        message: "",
-      });
-    } catch (error) {
-      console.error("Contact form error:", error);
-      toast.error("Something went wrong. Please try calling us directly.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    <header>
+        <div class="logo">Brand<span>Scale</span></div>
+        <nav>
+            <ul>
+                <li><a href="#about">About</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
 
-  return (
-    <div className="min-h-screen" data-testid="contact-page">
-      {/* Hero Section */}
-      <section className="py-20 md:py-32 bg-slate-50" data-testid="contact-hero">
-        <div className="container mx-auto px-4 md:px-6 max-w-7xl">
-          <div className="max-w-3xl mx-auto text-center space-y-6">
-            <span className="text-sm font-medium uppercase tracking-widest text-slate-600">Get In Touch</span>
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight text-slate-900">
-              Let's <span className="gradient-text">Grow Together</span>
-            </h1>
-            <p className="text-lg md:text-xl leading-relaxed text-slate-600">
-              Ready to transform your digital presence? Schedule a free consultation and discover how we can help your business thrive.
-            </p>
-          </div>
+    <section class="hero">
+        <h1>Websites that Wow.<br>Marketing that Converts.</h1>
+        <p>Scale Your Brand with BrandScale. We deliver end-to-end web development, performance marketing, and lead generation designed to grow your revenue.</p>
+        <div class="hero-btns">
+            <a href="#contact" class="btn">Get Your Free Marketing Audit</a>
+            <a href="#services" class="btn btn-outline">Start Generating Leads</a>
         </div>
-      </section>
+    </section>
 
-      {/* Contact Section */}
-      <section className="py-20 md:py-32 bg-white" data-testid="contact-form-section">
-        <div className="container mx-auto px-4 md:px-6 max-w-7xl">
-          <div className="grid md:grid-cols-2 gap-16">
-            {/* Contact Info */}
-            <div className="space-y-8">
-              <div>
-                <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 mb-6">
-                  Visit Our Office
-                </h2>
-                <p className="text-base leading-relaxed text-slate-600">
-                  We're located in Wani, Maharashtra and serve businesses across the region. Stop by for a coffee and let's discuss your project!
-                </p>
-              </div>
+    <section id="about" class="about">
+        <h2>Driven by Results. Rooted in Wani.</h2>
+        <p>"We believe that a website shouldn't just be a digital brochure—it should be your hardest-working salesperson. My team and I are dedicated to helping businesses in Maharashtra turn their ad spend into measurable revenue through data-driven marketing and high-converting web design."</p>
+        <div class="founder">— Sahil Santosh Kallurwar, Founder</div>
+    </section>
 
-              <div className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900 mb-1">Address</h3>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                      Seva Nagar, Wani, near Santaji Convent<br />
-                      Maharashtra 445304
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Phone className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900 mb-1">Phone</h3>
-                    <a href="tel:9370163994" className="text-blue-600 hover:text-blue-700 transition-colors text-sm">
-                      9370163994
-                    </a>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900 mb-1">Business Hours</h3>
-                    <p className="text-slate-600 text-sm">
-                      Open Daily<br />
-                      Until 6:00 PM
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Google Maps */}
-              <div className="rounded-2xl overflow-hidden shadow-lg" data-testid="google-maps">
-                <iframe
-                  title="BrandScale Location"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3751.7!2d79.85!3d20.05!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjDCsDAzJzAwLjAiTiA3OcKwNTEnMDAuMCJF!5e0!3m2!1sen!2sin!4v1234567890"
-                  width="100%"
-                  height="300"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                ></iframe>
-              </div>
+    <section id="services" class="services">
+        <h2>End-to-End Digital Growth Solutions</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>💻 Web Design & Dev</h3>
+                <p>Custom, lightning-fast, and mobile-first websites designed to capture attention and convert visitors into loyal customers.</p>
             </div>
-
-            {/* Contact Form */}
-            <div className="bg-slate-50 rounded-2xl p-8 md:p-10" data-testid="contact-form">
-              <h2 className="text-3xl font-semibold text-slate-900 mb-6">
-                Send Us a Message
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Your Name *</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    data-testid="contact-input-name"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="h-12 rounded-lg border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    data-testid="contact-input-phone"
-                    placeholder="9370163994"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="h-12 rounded-lg border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="business_name">Business Name *</Label>
-                  <Input
-                    id="business_name"
-                    name="business_name"
-                    data-testid="contact-input-business"
-                    placeholder="Your Company Name"
-                    value={formData.business_name}
-                    onChange={handleChange}
-                    className="h-12 rounded-lg border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="service">Service Interested In *</Label>
-                  <Select onValueChange={handleServiceChange} value={formData.service} required>
-                    <SelectTrigger data-testid="contact-select-service" className="h-12 rounded-lg border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600">
-                      <SelectValue placeholder="Select a service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="web-design">Web Design & Development</SelectItem>
-                      <SelectItem value="performance-marketing">Performance Marketing & Ads</SelectItem>
-                      <SelectItem value="lead-generation">Lead Generation</SelectItem>
-                      <SelectItem value="complete-package">Complete Digital Package</SelectItem>
-                      <SelectItem value="consultation">Free Consultation</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="message">Your Message *</Label>
-                  <Textarea
-                    id="message"
-                    name="message"
-                    data-testid="contact-input-message"
-                    placeholder="Tell us about your project and goals..."
-                    value={formData.message}
-                    onChange={handleChange}
-                    className="min-h-[150px] rounded-lg border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 resize-none"
-                    required
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  data-testid="contact-submit-button"
-                  disabled={isSubmitting}
-                  className="w-full h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg shadow-blue-600/20 btn-primary"
-                >
-                  {isSubmitting ? "Sending..." : "Send Message"}
-                  <Send className="ml-2 w-4 h-4" />
-                </Button>
-              </form>
+            <div class="card">
+                <h3>📈 Performance Marketing</h3>
+                <p>Stop guessing with your ad spend. We create data-driven Google and Meta ad campaigns engineered to maximize your ROAS.</p>
             </div>
-          </div>
+            <div class="card">
+                <h3>🎯 Lead Generation</h3>
+                <p>Strategic sales funnels and targeted digital marketing that deliver high-quality, pre-qualified prospects straight to your inbox.</p>
+            </div>
         </div>
-      </section>
-    </div>
-  );
-}
+    </section>
+
+    <section class="testimonials">
+        <h2>Real Results. 5-Star Reputation.</h2>
+        <div class="grid">
+            <div class="review">
+                <div class="stars">★★★★★</div>
+                <p>"Nice service. Highly recommended for any business looking to upgrade their digital presence."</p>
+                <strong>- Ayush Asekar</strong>
+            </div>
+             <div class="review">
+                <div class="stars">★★★★★</div>
+                <p>"BrandScale completely transformed how we generate leads. Professional and responsive team."</p>
+                <strong>- Local Wani Business Owner</strong>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="contact">
+        <div class="contact-info">
+            <h2>Ready to Scale? Let's Talk.</h2>
+            <p><strong>📍 Location:</strong> Seva Nagar, Wani, near Santaji Convent, Maharashtra 445304</p>
+            <p><strong>📞 Phone:</strong> <a href="tel:+919370163994">9370163994</a></p>
+            <p><strong>⏰ Hours:</strong> Open daily until 6:00 PM</p>
+            <br>
+            <p><em>*Serving local businesses in Wani and across Maharashtra.</em></p>
+        </div>
+        <div class="contact-form">
+            <form action="#" method="POST">
+                <input type="text" placeholder="Your Name" required>
+                <input type="tel" placeholder="Your Phone Number" required>
+                <select required style="padding: 12px; border-radius: 5px; border: none; font-size: 1rem;">
+                    <option value="">What do you need help with?</option>
+                    <option value="web">Web Design</option>
+                    <option value="ads">Performance Ads</option>
+                    <option value="leads">Lead Generation</option>
+                </select>
+                <button type="submit" class="btn">Request Free Consultation</button>
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 BrandScale | Founded by Sahil Santosh Kallurwar. All Rights Reserved.</p>
+    </footer>
+
+</body>
+</html>
